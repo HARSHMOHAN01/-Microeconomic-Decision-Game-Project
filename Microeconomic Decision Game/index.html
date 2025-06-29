@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microeconomic Decision Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .game-container {
+            min-height: calc(100vh - 4rem);
+        }
+        #eventNotification {
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+    <div class="container mx-auto px-4 py-8">
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-bold text-indigo-700 mb-2">Microeconomic Decision Game</h1>
+            <p class="text-xl text-gray-600">Manage your resources strategically to maximize utility</p>
+        </header>
+
+        <div class="flex flex-col lg:flex-row gap-6">
+            <!-- Player Selection -->
+            <div id="playerSelect" class="bg-white rounded-lg shadow-lg p-6 mb-6 lg:w-1/4">
+                <h2 class="text-2xl font-semibold mb-4 text-indigo-600">Select Player Role</h2>
+                <div class="space-y-4">
+                    <button onclick="initGame('household')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300">
+                        Household Manager
+                        <p class="text-sm font-normal mt-1">Manage income, expenses, and savings for a family</p>
+                    </button>
+                    <button onclick="initGame('business')" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300">
+                        Small Business Owner
+                        <p class="text-sm font-normal mt-1">Make production and pricing decisions</p>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Game Container -->
+            <div id="gameContainer" class="hidden game-container bg-white rounded-lg shadow-lg p-6 flex-1">
+                <!-- Game Header -->
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+                    <h2 id="gameTitle" class="text-2xl font-bold text-indigo-600"></h2>
+                    <div class="mt-4 md:mt-0">
+                        <span id="currentRound" class="bg-gray-200 rounded-full px-4 py-2 font-medium">Round 1 / 12</span>
+                    </div>
+                </div>
+
+                <!-- Stats Dashboard -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-medium text-blue-800">Resources</h3>
+                            <span id="money" class="text-2xl font-bold text-blue-600">$1,000</span>
+                        </div>
+                        <p class="text-sm text-blue-600 mt-1">Available Funds</p>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-medium text-green-800">Score</h3>
+                            <span id="utilityScore" class="text-2xl font-bold text-green-600">100</span>
+                        </div>
+                        <p id="scoreType" class="text-sm text-green-600 mt-1">Utility</p>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-medium text-purple-800">Assets</h3>
+                            <span id="assets" class="text-2xl font-bold text-purple-600">5</span>
+                        </div>
+                        <p id="assetsLabel" class="text-sm text-purple-600 mt-1">Inventory</p>
+                    </div>
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-medium text-yellow-800">Labor</h3>
+                            <span id="labor" class="text-2xl font-bold text-yellow-600">3</span>
+                        </div>
+                        <p id="laborLabel" class="text-sm text-yellow-600 mt-1">Workers</p>
+                    </div>
+                </div>
+
+                <!-- Market Information -->
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6">
+                    <h3 class="font-medium text-gray-800 mb-2">Market Conditions</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div class="flex justify-between">
+                            <span id="marketItem1" class="font-medium">Food:</span>
+                            <span id="marketPrice1" class="font-bold">$10 per unit</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span id="marketItem2" class="font-medium">Housing:</span>
+                            <span id="marketPrice2" class="font-bold">$500 per month</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span id="marketItem3" class="font-medium">Entertainment:</span>
+                            <span id="marketPrice3" class="font-bold">$20 per unit</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Event Notification -->
+                <div id="eventNotification" class="hidden bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-lg">
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <strong class="font-bold">Market Event: </strong>
+                        <span id="eventText" class="ml-1">Inflation has increased!</span>
+                    </div>
+                </div>
+
+                <!-- Action Panels -->
+                <div class="flex flex-col lg:flex-row gap-6 mb-6">
+                    <!-- Actions Panel -->
+                    <div class="lg:w-1/2">
+                        <h3 class="text-xl font-semibold mb-3 text-gray-700">Available Actions</h3>
+                        <div id="actionPanel" class="space-y-3">
+                            <!-- Actions will be injected here based on game mode -->
+                        </div>
+                    </div>
+
+                    <!-- Results Panel -->
+                    <div class="lg:w-1/2">
+                        <div class="rounded-lg border border-gray-200 p-4 bg-white shadow-sm">
+                            <h3 class="text-xl font-semibold mb-3 text-gray-700">Decision Outcomes</h3>
+                            <div id="decisionResults" class="space-y-4">
+                                <p class="text-gray-600">Your decisions will appear here.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Container -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm h-80">
+                        <h3 class="text-xl font-semibold mb-3 text-gray-700">Resource Allocation</h3>
+                        <div class="h-64">
+                            <canvas id="pieChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm h-80">
+                        <h3 class="text-xl font-semibold mb-3 text-gray-700">Performance Over Time</h3>
+                        <div class="h-64">
+                            <canvas id="lineChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Next Turn Button -->
+                <div class="text-center mt-6">
+                    <button id="nextTurnBtn" onclick="nextTurn()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 shadow-lg">
+                        Complete Turn
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let gameState = {
+            mode: null, // 'household' or 'business'
+            round: 1,
+            maxRounds: 12,
+            money: 0,
+            utilityScore: 0,
+            assets: 0,
+            labor: 0,
+            marketPrices: {},
+            inventory: {},
+            history: {
+                utility: [],
+                money: [],
+                spending: []
+            },
+            pricesHistory: [],
+            lastDecision: ""
+        };
+
+        // Chart references
+        let pieChart, lineChart;
+
+        // Initialize the game based on player role selection
+        function initGame(mode) {
+            gameState.mode = mode;
+            gameState.round = 1;
+
+            // Show game container and hide selection screen
+            document.getElementById('playerSelect').classList.add('hidden');
+            document.getElementById('gameContainer').classList.remove('hidden');
+            document.getElementById('gameContainer').classList.add('fade-in');
+
+            // Set up initial game state based on mode
+            if (mode === 'household') {
+                document.getElementById('gameTitle').textContent = 'Household Economics Manager';
+                gameState.money = 1000;
+                gameState.utilityScore = 100;
+                gameState.assets = 5; // Represents home goods/stocks
+                gameState.labor = 1; // Represents working family members
+                gameState.inventory = {
+                    food: 5,
+                    housing: 1,
+                    entertainment: 2
+                };
+                gameState.marketPrices = {
+                    food: 10,
+                    housing: 500,
+                    entertainment: 20,
+                    education: 200
+                };
+                document.getElementById('assetsLabel').textContent = 'Inventory';
+                document.getElementById('laborLabel').textContent = 'Workers';
+            } else { // business
+                document.getElementById('gameTitle').textContent = 'Small Business Economics';
+                gameState.money = 1500;
+                gameState.utilityScore = 0; // Will track profit
+                document.getElementById('scoreType').textContent = 'Profit';
+                gameState.assets = 10; // Represents equipment/inventory
+                gameState.labor = 3; // Employees
+                gameState.inventory = {
+                    product: 15,
+                    materials: 30,
+                    equipment: 5
+                };
+                gameState.marketPrices = {
+                    product: 15,
+                    materials: 5,
+                    labor: 12,
+                    equipment: 200
+                };
+                document.getElementById('assetsLabel').textContent = 'Equipment';
+                document.getElementById('laborLabel').textContent = 'Employees';
+            }
+
+            // Update UI with initial values
+            updateStats();
+
+            // Set up market prices display
+            updateMarketPrices();
+
+            // Initialize action panel based on mode
+            setupActionPanel();
+
+            // Initialize charts
+            initializeCharts();
+
+            // Update round display
+            updateRoundDisplay();
+        }
+
+        // Update all displayed stats
+        function updateStats() {
+            document.getElementById('money').textContent = `$${gameState.money}`;
+            document.getElementById('utilityScore').textContent = gameState.utilityScore;
+            document.getElementById('assets').textContent = gameState.assets;
+            document.getElementById('labor').textContent = gameState.labor;
+        }
+
+        // Update market prices display
+        function updateMarketPrices() {
+            if (gameState.mode === 'household') {
+                document.getElementById('marketItem1').textContent = 'Food:';
+                document.getElementById('marketPrice1').textContent = `$${gameState.marketPrices.food} per unit`;
+                document.getElementById('marketItem2').textContent = 'Housing:';
+                document.getElementById('marketPrice2').textContent = `$${gameState.marketPrices.housing} per month`;
+                document.getElementById('marketItem3').textContent = 'Entertainment:';
+                document.getElementById('marketPrice3').textContent = `$${gameState.marketPrices.entertainment} per unit`;
+            } else {
+                document.getElementById('marketItem1').textContent = 'Product:';
+                document.getElementById('marketPrice1').textContent = `$${gameState.marketPrices.product} per unit`;
+                document.getElementById('marketItem2').textContent = 'Materials:';
+                document.getElementById('marketPrice2').textContent = `$${gameState.marketPrices.materials} per unit`;
+                document.getElementById('marketItem3').textContent = 'Labor:';
+                document.getElementById('marketPrice3').textContent = `$${gameState.marketPrices.labor} per hour`;
+            }
+        }
+
+        // Set up the action panel based on game mode
+        function setupActionPanel() {
+            const actionPanel = document.getElementById('actionPanel');
+            actionPanel.innerHTML = '';
+
+            if (gameState.mode === 'household') {
+                // Household actions
+                actionPanel.innerHTML = `
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <h4 class="font-medium text-blue-800 mb-2">Consume Goods</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Food ($${gameState.marketPrices.food})</label>
+                                <div class="flex">
+                                    <button onclick="adjustQuantity('food', -1)" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-l">-</button>
+                                    <span id="foodQty" class="bg-gray-100 py-1 px-4 text-center">0</span>
+                                    <button onclick="adjustQuantity('food', 1)" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-r">+</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Housing ($${gameState.marketPrices.housing})</label>
+                                <select id="housingSelect" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                    <option value="0">Don't pay rent</option>
+                                    <option value="1">Pay rent</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Entertainment ($${gameState.marketPrices.entertainment})</label>
+                                <div class="flex">
+                                    <button onclick="adjustQuantity('entertainment', -1)" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-l">-</button>
+                                    <span id="entertainmentQty" class="bg-gray-100 py-1 px-4 text-center">0</span>
+                                    <button onclick="adjustQuantity('entertainment', 1)" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-r">+</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="makePurchase()" class="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                            Confirm Purchase
+                        </button>
+                    </div>
+
+                    <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <h4 class="font-medium text-green-800 mb-2">Invest & Save</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Education Investment ($${gameState.marketPrices.education})</label>
+                                <select id="educationSelect" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                    <option value="0">No investment</option>
+                                    <option value="1">Basic course</option>
+                                    <option value="2">Advanced program</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Savings Amount</label>
+                                <input id="savingsAmount" type="range" min="0" max="100" value="0" class="w-full" oninput="document.getElementById('savingsValue').textContent = this.value + '%'">
+                                <p class="text-sm text-gray-600 mt-1">Save <span id="savingsValue">0%</span> of income</p>
+                            </div>
+                        </div>
+                        <button onclick="makeInvestment()" class="mt-3 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                            Confirm Investments
+                        </button>
+                    </div>
+                `;
+            } else {
+                // Business actions
+                actionPanel.innerHTML = `
+                    <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                        <h4 class="font-medium text-purple-800 mb-2">Production Decisions</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Hire Labor ($${gameState.marketPrices.labor}/hr)</label>
+                                <div class="flex">
+                                    <button onclick="adjustQuantity('labor', -1)" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-l">-</button>
+                                    <span id="laborQty" class="bg-gray-100 py-1 px-4 text-center">0</span>
+                                    <button onclick="adjustQuantity('labor', 1)" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-r">+</button>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Current workers: ${gameState.labor}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Buy Materials ($${gameState.marketPrices.materials})</label>
+                                <div class="flex">
+                                    <button onclick="adjustQuantity('materials', -5)" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-l">-5</button>
+                                    <span id="materialsQty" class="bg-gray-100 py-1 px-4 text-center">0</span>
+                                    <button onclick="adjustQuantity('materials', 5)" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-r">+5</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="makeProductionDecision()" class="mt-3 w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                            Confirm Production
+                        </button>
+                    </div>
+
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                        <h4 class="font-medium text-yellow-800 mb-2">Equipment & Pricing</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Buy Equipment ($${gameState.marketPrices.equipment})</label>
+                                <div class="flex">
+                                    <button onclick="adjustQuantity('equipment', -1)" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-l">-</button>
+                                    <span id="equipmentQty" class="bg-gray-100 py-1 px-4 text-center">0</span>
+                                    <button onclick="adjustQuantity('equipment', 1)" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-r">+</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Product Price ($)</label>
+                                <input id="priceInput" type="number" min="1" value="${gameState.marketPrices.product}" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                            </div>
+                        </div>
+                        <button onclick="makePricingDecision()" class="mt-3 w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                            Confirm Pricing
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Adjust quantity for purchasing items
+        function adjustQuantity(item, change) {
+            const element = document.getElementById(`${item}Qty`);
+            let current = parseInt(element.textContent) || 0;
+            current += change;
+            if (current < 0) current = 0;
+            element.textContent = current;
+        }
+
+        // Handle purchases (household mode)
+        function makePurchase() {
+            const foodQty = parseInt(document.getElementById('foodQty').textContent) || 0;
+            const housingQty = parseInt(document.getElementById('housingSelect').value);
+            const entertainmentQty = parseInt(document.getElementById('entertainmentQty').textContent) || 0;
+
+            const totalCost = 
+                (foodQty * gameState.marketPrices.food) + 
+                (housingQty * gameState.marketPrices.housing) + 
+                (entertainmentQty * gameState.marketPrices.entertainment);
+
+            // Check if player can afford
+            if (totalCost > gameState.money) {
+                showResult("Not enough funds for this purchase!", "red");
+                return;
+            }
+
+            // Deduct money and update utility
+            gameState.money -= totalCost;
+            
+            // Calculate utility based on diminishing marginal utility
+            let utilityIncrease = 0;
+            if (foodQty > 0) {
+                utilityIncrease += 8 + Math.max(0, (foodQty - 1) * 5); // Simple diminishing returns
+            }
+            if (housingQty > 0) {
+                utilityIncrease += 20; // Fixed utility for housing
+            }
+            if (entertainmentQty > 0) {
+                utilityIncrease += 10 + Math.max(0, (entertainmentQty - 1) * 3);
+            }
+
+            gameState.utilityScore += utilityIncrease;
+
+            // Update inventory
+            gameState.inventory.food += foodQty;
+            gameState.inventory.entertainment += entertainmentQty;
+
+            // Update stats
+            updateStats();
+
+            // Show result
+            showResult(`Purchased items successfully! Gained ${utilityIncrease} utility points.`, "green");
+
+            // Update charts
+            updateCharts();
+
+            // Prepare for next actions
+            document.getElementById('foodQty').textContent = '0';
+            document.getElementById('entertainmentQty').textContent = '0';
+            document.getElementById('housingSelect').value = '0';
+        }
+
+        // Handle investments (household mode)
+        function makeInvestment() {
+            const educationLevel = parseInt(document.getElementById('educationSelect').value);
+            const savingsPercent = parseInt(document.getElementById('savingsAmount').value);
+
+            // Calculate education cost and benefits
+            const educationCost = educationLevel * gameState.marketPrices.education;
+            let utilityIncrease = 0;
+            
+            if (educationLevel > 0) {
+                utilityIncrease = educationLevel * 5; // Each level gives utility boost
+            }
+
+            // Calculate savings (as percentage of current money)
+            const savingsAmount = Math.floor(gameState.money * (savingsPercent / 100));
+            const spendable = gameState.money - savingsAmount - educationCost;
+
+            if (spendable < 0) {
+                showResult("Not enough funds for these investments!", "red");
+                return;
+            }
+
+            // Update state
+            gameState.money -= (savingsAmount + educationCost);
+            gameState.utilityScore += utilityIncrease;
+
+            // Show results
+            let message = `Saved $${savingsAmount} (${savingsPercent}%)`;
+            if (educationLevel > 0) {
+                message += ` and invested $${educationCost} in education (+${utilityIncrease} utility)`;
+            }
+            showResult(message, "green");
+
+            // Update stats
+            updateStats();
+
+            // Update charts
+            updateCharts();
+
+            // Reset inputs
+            document.getElementById('educationSelect').value = '0';
+            document.getElementById('savingsAmount').value = '0';
+            document.getElementById('savingsValue').textContent = '0%';
+        }
+
+        // Handle production decisions (business mode)
+        function makeProductionDecision() {
+            const laborQty = parseInt(document.getElementById('laborQty').textContent) || 0;
+            const materialsQty = parseInt(document.getElementById('materialsQty').textContent) || 0;
+
+            // Calculate costs
+            const laborCost = laborQty * gameState.marketPrices.labor * 10; // Assume 10 hours per worker
+            const materialsCost = materialsQty * gameState.marketPrices.materials;
+            const totalCost = laborCost + materialsCost;
+
+            // Check affordability
+            if (totalCost > gameState.money) {
+                showResult("Not enough funds for this production plan!", "red");
+                return;
+            }
+
+            // Update labor
+            gameState.labor += laborQty;
+
+            // Calculate production with diminishing returns
+            let production = 0;
+            if (gameState.labor > 0) {
+                production = Math.min(
+                    materialsQty, 
+                    gameState.labor * 5 * (1 - (gameState.labor - 3) * 0.1) // Diminishing returns after 3 workers
+                );
+            }
+
+            // Update state
+            gameState.money -= totalCost;
+            gameState.inventory.materials += materialsQty;
+            gameState.inventory.product += production;
+
+            // Show results
+            showResult(`Hired ${laborQty} workers and bought ${materialsQty} materials. Produced ${production} units.`, "blue");
+
+            // Update stats
+            updateStats();
+
+            // Update charts
+            updateCharts();
+
+            // Reset inputs
+            document.getElementById('laborQty').textContent = '0';
+            document.getElementById('materialsQty').textContent = '0';
+        }
+
+        // Handle pricing decisions (business mode)
+        function makePricingDecision() {
+            const newPrice = parseInt(document.getElementById('priceInput').value);
+            const equipmentQty = parseInt(document.getElementById('equipmentQty').textContent) || 0;
+            const equipmentCost = equipmentQty * gameState.marketPrices.equipment;
+
+            // Check affordability
+            if (equipmentCost > gameState.money) {
+                showResult("Not enough funds for this equipment!", "red");
+                return;
+            }
+
+            // Update price and equipment
+            gameState.marketPrices.product = newPrice;
+            gameState.assets += equipmentQty;
+            gameState.money -= equipmentCost;
+
+            // Show results
+            showResult(`Set product price to $${newPrice} and bought ${equipmentQty} equipment.`, "purple");
+
+            // Update stats and market prices
+            updateStats();
+            updateMarketPrices();
+
+            // Update charts
+            updateCharts();
+
+            // Reset inputs
+            document.getElementById('equipmentQty').textContent = '0';
+        }
+
+        // Show decision results
+        function showResult(message, color) {
+            const resultPanel = document.getElementById('decisionResults');
+            const colors = {
+                green: 'text-green-700 bg-green-50 border-green-200',
+                red: 'text-red-700 bg-red-50 border-red-200',
+                blue: 'text-blue-700 bg-blue-50 border-blue-200',
+                purple: 'text-purple-700 bg-purple-50 border-purple-200'
+            };
+
+            resultPanel.innerHTML = `
+                <div class="border-l-4 ${colors[color]} p-4 rounded">
+                    <p class="font-medium">${message}</p>
+                </div>
+            `;
+        }
+
+        // Initialize charts
+        function initializeCharts() {
+            const pieCtx = document.getElementById('pieChart').getContext('2d');
+            const lineCtx = document.getElementById('lineChart').getContext('2d');
+
+            // Initialize with empty data
+            pieChart = new Chart(pieCtx, {
+                type: 'pie',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(255, 206, 86, 0.7)',
+                            'rgba(75, 192, 192, 0.7)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            lineChart = new Chart(lineCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: gameState.mode === 'household' ? 'Utility Score' : 'Profit',
+                        data: [],
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        fill: true,
+                        tension: 0.1,
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointBackgroundColor: 'rgba(54, 162, 235, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 500,
+                        easing: 'linear'
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                display: true,
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Record initial state
+            recordHistory();
+        }
+
+        // Update charts with current data
+        function updateCharts() {
+            recordHistory();
+
+            if (gameState.mode === 'household') {
+                // Update pie chart
+                pieChart.data.labels = ['Food', 'Housing', 'Entertainment', 'Savings'];
+                pieChart.data.datasets[0].data = [
+                    gameState.inventory.food * gameState.marketPrices.food,
+                    gameState.marketPrices.housing,
+                    gameState.inventory.entertainment * gameState.marketPrices.entertainment,
+                    gameState.money * 0.1 // Approximate savings
+                ];
+            } else {
+                pieChart.data.labels = ['Labor', 'Materials', 'Product', 'Equipment'];
+                pieChart.data.datasets[0].data = [
+                    gameState.labor * gameState.marketPrices.labor * 10,
+                    gameState.inventory.materials * gameState.marketPrices.materials,
+                    gameState.inventory.product * gameState.marketPrices.product,
+                    gameState.assets * gameState.marketPrices.equipment * 0.1
+                ];
+            }
+            pieChart.update();
+
+            // Update line chart
+            lineChart.data.labels = Array.from({length: gameState.round}, (_, i) => `Round ${i + 1}`);
+            lineChart.data.datasets[0].data = gameState.history.utility;
+            lineChart.data.datasets[0].label = gameState.mode === 'household' ? 'Utility Score' : 'Profit';
+            lineChart.update();
+        }
+
+        // Record current state in history
+        function recordHistory() {
+            gameState.history.utility.push(gameState.utilityScore);
+            gameState.history.money.push(gameState.money);
+            
+            // Record spending (simplified for demo)
+            if (gameState.mode === 'household') {
+                const spending = 
+                    (gameState.inventory.food * gameState.marketPrices.food) + 
+                    gameState.marketPrices.housing + 
+                    (gameState.inventory.entertainment * gameState.marketPrices.entertainment);
+                gameState.history.spending.push(spending);
+            } else {
+                gameState.history.spending.push(gameState.labor * gameState.marketPrices.labor * 10);
+            }
+
+            // Record prices
+            gameState.pricesHistory.push({...gameState.marketPrices});
+        }
+
+        // Update round display
+        function updateRoundDisplay() {
+            document.getElementById('currentRound').textContent = `Round ${gameState.round} / ${gameState.maxRounds}`;
+        }
+
+        // Trigger random events
+        function triggerRandomEvent() {
+            const events = [
+                {
+                    name: 'Inflation',
+                    effect: () => {
+                        Object.keys(gameState.marketPrices).forEach(key => {
+                            gameState.marketPrices[key] = Math.floor(gameState.marketPrices[key] * 1.1);
+                        });
+                        return "Inflation has increased all prices by 10%!";
+                    }
+                },
+                {
+                    name: 'Stock Market Crash',
+                    effect: () => {
+                        gameState.money = Math.floor(gameState.money * 0.9);
+                        return "Stock market crash! Lost 10% of your investments.";
+                    }
+                },
+                {
+                    name: 'Bonus Income',
+                    effect: () => {
+                        const bonus = gameState.mode === 'household' ? 
+                            Math.floor(gameState.money * 0.1) : 
+                            Math.floor(Math.random() * 200) + 100;
+                        gameState.money += bonus;
+                        return `Received a bonus of $${bonus}!`;
+                    }
+                },
+                {
+                    name: 'Productivity Boost',
+                    effect: () => {
+                        if (gameState.mode === 'business') {
+                            gameState.utilityScore += 50; // Represents increased profit
+                            return "Productivity boost! Gained 50 profit points.";
+                        } else {
+                            gameState.utilityScore += 20;
+                            return "Feeling refreshed! Gained 20 utility points.";
+                        }
+                    }
+                }
+            ];
+
+            // 30% chance of event happening each round
+            if (Math.random() < 0.3) {
+                const event = events[Math.floor(Math.random() * events.length)];
+                const message = event.effect();
+                
+                // Show notification
+                document.getElementById('eventNotification').classList.remove('hidden');
+                document.getElementById('eventText').textContent = message;
+                
+                // Update UI
+                updateStats();
+                updateMarketPrices();
+
+                // Hide notification after 5 seconds
+                setTimeout(() => {
+                    document.getElementById('eventNotification').classList.add('hidden');
+                }, 5000);
+            }
+        }
+
+        // Advance to next turn
+        function nextTurn() {
+            // Increment round
+            gameState.round++;
+            updateRoundDisplay();
+
+            // Trigger random event
+            triggerRandomEvent();
+
+            // Update charts
+            updateCharts();
+
+            // Reset results panel
+            document.getElementById('decisionResults').innerHTML = '<p class="text-gray-600">Make decisions for this round.</p>';
+
+            // End game if last round
+            if (gameState.round > gameState.maxRounds) {
+                // Calculate final score
+                let finalScore;
+                let message;
+                
+                if (gameState.mode === 'household') {
+                    finalScore = gameState.utilityScore;
+                    message = `Game Over! Your final utility score is ${finalScore}.`;
+                } else {
+                    finalScore = gameState.utilityScore;
+                    message = `Game Over! Your final profit is $${finalScore}.`;
+                }
+                
+                document.getElementById('decisionResults').innerHTML = `
+                    <div class="bg-indigo-100 border-l-4 border-indigo-500 text-indigo-700 p-4 rounded">
+                        <h4 class="font-bold text-lg mb-2">Game Complete!</h4>
+                        <p>${message}</p>
+                        <button onclick="initGame(gameState.mode)" class="mt-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">
+                            Play Again
+                        </button>
+                    </div>
+                `;
+                
+                // Disable next turn button
+                document.getElementById('nextTurnBtn').disabled = true;
+                document.getElementById('nextTurnBtn').classList.add('opacity-50');
+            } else {
+                // Generate income for next round
+                if (gameState.mode === 'household') {
+                    gameState.money += Math.floor(500 + (gameState.round * 20));
+                    if (Math.random() > 0.7) {
+                        // Bonus income chance
+                        gameState.money += Math.floor(Math.random() * 100);
+                    }
+                } else {
+                    // Business income based on assets, labor and product
+                    const baseIncome = gameState.inventory.product * gameState.marketPrices.product;
+                    gameState.money += Math.floor(baseIncome * (0.8 + Math.random() * 0.4));
+                    gameState.utilityScore = gameState.money - 1500; // Starting money was 1500
+                }
+                
+                // Update stats
+                updateStats();
+            }
+        }
+    </script>
+</body>
+</html>
